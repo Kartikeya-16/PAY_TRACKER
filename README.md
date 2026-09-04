@@ -1,7 +1,6 @@
 # PayTracker
 
-PayTracker is a microservices-based personal finance and subscription management platform, built for my MCA Phase 2 project.
-
+PayTracker is a microservices-based personal finance and subscription management platform, 
 The idea is to bring together two things that are usually tracked separately — everyday income/expense logging and recurring subscription management — into one system, along with an analytics service that works out spending trends and budget usage.
 
 ## Services in this project
