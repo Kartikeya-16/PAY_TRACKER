@@ -2,18 +2,20 @@
 
 PayTracker is a microservices-based personal finance and subscription management platform, built for my MCA Phase 2 project.
 
-The idea is to combine expense tracking, income tracking, subscriptions and order/payment flow into one system, built using Spring Boot microservices instead of a single monolithic app.
+The idea is to bring together two things that are usually tracked separately — everyday income/expense logging and recurring subscription management — into one system. On top of that, there's an analytics service that works out spending trends and budget usage, and a notification service that alerts the user before a subscription renews or a budget is about to be exceeded.
 
 ## Services in this project
 
 | Service | Port | What it does |
 |---|---|---|
-| Eureka Server | 8761 | Service registry, so all services can find each other |
+| Eureka Server | 8761 | Service registry, so services can find each other |
 | API Gateway | 8080 | Single entry point, routes requests to the right service |
-| User Service | 8081 | Handles user registration and login |
-| Product Service | 8082 | Manages products (CRUD) |
-| Order Service | 8083 | Handles orders, talks to Product Service to check price/stock |
-| Payment Service | 8084 | Handles payments, talks to Order Service to get order total |
+| User & Auth Service | 8081 | Registration, login, JWT tokens |
+| Ledger Service | 8082 | Income and expense transactions |
+| Subscription Service | 8083 | Recurring subscriptions, price history, sends renewal alerts |
+| Analytics & Budget Service | 8084 | Budgets, spending trends, spending velocity |
+| Notification Service | 8085 | Receives renewal alerts and stores them |
+| RabbitMQ | 5672 / 15672 | Message queue used for renewal notifications |
 
 ## Tech used
 
@@ -21,26 +23,26 @@ The idea is to combine expense tracking, income tracking, subscriptions and orde
 - Spring Data JPA / Hibernate
 - MySQL (hosted on AWS RDS)
 - Eureka for service discovery
-- Spring Cloud Gateway for routing
-- OpenFeign for service-to-service calls
-- Swagger/OpenAPI for API docs
+- Spring Cloud Gateway for routing requests
+- OpenFeign for services calling each other directly
+- RabbitMQ for sending renewal notifications
+- JWT for login tokens
 - Docker + Docker Compose
 
 ## How everything talks to each other
+Client -> API Gateway (8080) -> User / Ledger / Subscription / Analytics / Notification
+Analytics -> Ledger (direct call)
+Analytics -> Subscription (direct call)
+Subscription -> RabbitMQ -> Notification
 
-Client -> API Gateway (8080) -> User / Product / Order / Payment Service
-Order Service -> Product Service (Feign)
-Payment Service -> Order Service (Feign)
 
+Most services talk to each other directly using Feign (basically a normal REST call). Only Subscription and Notification use RabbitMQ between them, since a renewal alert doesn't need an instant response the way Analytics needs an instant answer from Ledger.
 
-
-Each service has its own database (`user_db`, `product_db`, `order_db`, `payment_db`) so they don't share tables directly.
+Each service has its own database (`user_db`, `ledger_db`, `subscription_db`, `analytics_db`, `notification_db`) so no service is directly touching another service's tables.
 
 ## How to run it
 
 ### Option 1: Docker (easiest)
-
-Make sure Docker Desktop is running, then from this folder:
 
 ```bash
 docker compose up -d
@@ -51,26 +53,23 @@ Check everything started:
 docker compose ps
 ```
 
-To stop everything:
+Stop everything:
 ```bash
 docker compose down
 ```
 
-### Option 2: Run manually (for development)
+### Option 2: Run manually
 
-Start in this order (each in its own terminal / IntelliJ run config):
-1. Eureka Server
-2. API Gateway
-3. User Service, Product Service, Order Service, Payment Service (order doesn't matter for these 4)
+Start in this order: Eureka Server → RabbitMQ → API Gateway → the 5 microservices (order doesn't matter between these 5).
 
 ## Checking it works
 
-- Eureka dashboard: http://localhost:8761 (should show all 5 services once they're up)
-- Test through gateway: `curl http://localhost:8080/api/products`
-- Each service also has its own Swagger page, see the individual READMEs
+- Eureka dashboard: http://localhost:8761
+- RabbitMQ dashboard: http://localhost:15672 (guest/guest)
+- Test through the gateway: `curl http://localhost:8080/api/transactions/user/5`
 
 ## Notes
 
-- I originally started with local MySQL but moved everything to AWS RDS so all services share one DB instance (just different schemas).
-- Had a lot of trouble getting the API Gateway working with the newer Spring Cloud version — turns out the property names changed (`spring.cloud.gateway.routes` became `spring.cloud.gateway.server.webflux.routes`) and the actual dependency name changed too (`spring-cloud-starter-gateway` -> `spring-cloud-starter-gateway-server-webflux`). Took a while to figure out.
-- Docker was also tricky because some services built as `.war` instead of `.jar` even though I didn't set that anywhere, so I had to adjust the Dockerfile to accept either.
+- Had some trouble with Spring Cloud Gateway's newer version — the dependency name changed (`spring-cloud-starter-gateway-server-webflux` instead of the old name) and the property names changed too (`spring.cloud.gateway.server.webflux.routes` instead of `spring.cloud.gateway.routes`).
+- Service names registered with Eureka can't have underscores in them, so even though my project folders use underscores (`user_service`), the actual `spring.application.name` uses hyphens (`user-service`).
+- RabbitMQ's default message format doesn't like Java's `LocalDate` type for security reasons — had to switch to sending messages as JSON instead.
