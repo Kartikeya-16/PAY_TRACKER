@@ -21,12 +21,7 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
 
-    @PostMapping("/check-renewals")
-    @Operation(summary = "Check for subscriptions renewing soon and send alerts")
-    public ResponseEntity<String> checkRenewals() {
-        int count = subscriptionService.checkAndSendRenewalAlerts();
-        return ResponseEntity.ok(count + " renewal alert(s) sent");
-    }
+
 
     @PostMapping
     @Operation(summary = "Add a new subscription")

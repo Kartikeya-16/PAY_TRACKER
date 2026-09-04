@@ -1,8 +1,5 @@
 package com.paytracker.subscription_service.Service;
 
-import com.paytracker.subscription_service.Config.RabbitMQConfig;
-import com.paytracker.subscription_service.Dto.RenewalEvent;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import com.paytracker.subscription_service.Dto.*;
 import com.paytracker.subscription_service.Entity.PriceHistory;
 import com.paytracker.subscription_service.Entity.Subscription;
@@ -18,31 +15,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
-    // Checks subscriptions renewing in the next 3 days and sends an alert message for each one.
-// This matches the synopsis's "renewal upcoming" event idea.
-    public int checkAndSendRenewalAlerts() {
-        LocalDate today = LocalDate.now();
-        LocalDate in3Days = today.plusDays(3);
 
-        List<Subscription> renewingSoon = subscriptionRepository.findByNextRenewalDateBetween(today, in3Days);
 
-        int alertsSent = 0;
-        for (Subscription sub : renewingSoon) {
-            RenewalEvent event = RenewalEvent.builder()
-                    .userId(sub.getUserId())
-                    .subscriptionName(sub.getName())
-                    .price(sub.getCurrentPrice())
-                    .renewalDate(sub.getNextRenewalDate())
-                    .build();
 
-            rabbitTemplate.convertAndSend(RabbitMQConfig.RENEWAL_QUEUE, event);
-            alertsSent++;
-        }
-
-        return alertsSent;
-    }
-
-    private final RabbitTemplate rabbitTemplate;
     private final SubscriptionRepository subscriptionRepository;
 
     public SubscriptionResponse createSubscription(SubscriptionRequest request) {
