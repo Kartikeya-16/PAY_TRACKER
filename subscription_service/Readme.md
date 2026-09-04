@@ -2,6 +2,9 @@
 
 Tracks recurring subscriptions like Netflix or Spotify — billing cycle, renewal date, and how the price has changed over time.
 
+## Purpose
+This service treats subscriptions as their own thing instead of just another transaction — with a start date, a billing cycle, a renewal date, and a full history of price changes.
+
 ## Port
 8083
 
@@ -10,10 +13,10 @@ Tracks recurring subscriptions like Netflix or Spotify — billing cycle, renewa
 
 ## What it does
 - Add and manage subscriptions with a billing cycle (monthly/yearly) and renewal date
-- Every time a subscription's price changes, it gets logged as a new entry instead of just overwriting the old price — so you can see the full price history
-- Checks for subscriptions renewing soon and sends an alert through RabbitMQ
+- Every time a subscription's price changes, it's logged as a new entry instead of overwriting the old price — so the full price history is visible
+- Can check for subscriptions renewing soon
 
-## Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -26,21 +29,42 @@ Tracks recurring subscriptions like Netflix or Spotify — billing cycle, renewa
 | PUT | /api/subscriptions/{id}/renew | Move to the next renewal date |
 | PUT | /api/subscriptions/{id}/cancel | Cancel a subscription |
 | DELETE | /api/subscriptions/{id} | Delete a subscription |
-| POST | /api/subscriptions/check-renewals | Check for renewals in the next 3 days and send alerts |
-
-## Swagger
-http://localhost:8083/swagger-ui.html
 
 ## Run it
 ```bash
 ./mvnw spring-boot:run
 ```
-or via Docker:
-```bash
-docker compose up subscription-service
+
+## Testing via Swagger
+
+Open http://localhost:8083/swagger-ui.html
+
+### Step 1: Add a subscription
+Expand **POST /api/subscriptions** -> **Try it out**:
+```json
+{
+  "userId": 7,
+  "name": "Netflix",
+  "currentPrice": 649,
+  "billingCycle": "MONTHLY",
+  "startDate": "2026-01-05",
+  "nextRenewalDate": "2026-09-07"
+}
 ```
+Execute. Should return `201` with the subscription, including a `priceHistory` array already containing the starting price.
+
+### Step 2: Update the price
+Take the `id` from Step 1 -> expand **PUT /api/subscriptions/{id}/price** -> Try it out -> enter the `id` -> body:
+```json
+{ "newPrice": 799 }
+```
+Execute, then check **GET /api/subscriptions/{id}** again — `priceHistory` should now have two entries showing both prices.
+
+### Step 3: Try the other actions
+- **PUT /api/subscriptions/{id}/renew** — advances the renewal date
+- **PUT /api/subscriptions/{id}/cancel** — sets status to CANCELLED
+- **GET /api/subscriptions/user/{userId}/active** — only shows ACTIVE subscriptions
+- **DELETE /api/subscriptions/{id}** — removes it entirely
 
 ## Notes
-`check-renewals` has to be called manually right now instead of running automatically on a schedule — a scheduled version would use Spring's `@Scheduled` to run this once a day.
-
-Messages sent to RabbitMQ are sent as JSON instead of the default Java format, since the default format doesn't allow `LocalDate` fields for security reasons and kept throwing errors.
+This service is used by Analytics Service (to get subscription costs) the same way Ledger Service is — a direct API call, no shared database.
