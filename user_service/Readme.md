@@ -1,11 +1,45 @@
+# User & Auth Service
+
+Handles user registration, login, and issuing JWT tokens.
+
+## Port
+8081
+
+## Database
+`user_db`
+
+## What it does
+- Register with username, email, and password
+- Password is hashed with BCrypt before it's saved
+- Login checks the password and returns a signed JWT token plus the user's profile
+- Basic user CRUD
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | /api/users/register | Register a new user |
+| POST | /api/users/login | Login, returns a token and user info |
+| GET | /api/users/{id} | Get one user |
+| GET | /api/users | Get all users |
+| PUT | /api/users/{id} | Update email/currency |
+| DELETE | /api/users/{id} | Delete a user |
+
+## Run it
+```bash
+./mvnw spring-boot:run
+```
+or via Docker:
+```bash
+docker compose up user-service
+```
+
 ## Testing via Swagger
 
-Once the service is running, open:
-
-👉 http://localhost:8081/swagger-ui.html
+Open http://localhost:8081/swagger-ui.html
 
 ### Step 1: Register a user
-Expand **POST /api/users/register** → click **Try it out** → paste this into the request body:
+Expand **POST /api/users/register** → **Try it out** → paste:
 ```json
 {
   "username": "testuser",
@@ -13,7 +47,7 @@ Expand **POST /api/users/register** → click **Try it out** → paste this into
   "password": "pass123"
 }
 ```
-Click **Execute**. You should get a `201` response with the created user's `id` — note this down, you'll need it to test the other services.
+Execute. You should get a `201` response — note the returned `id`, you'll need it to test the other services.
 
 Response:
 ```json
@@ -34,13 +68,16 @@ Expand **POST /api/users/login** → **Try it out**:
   "password": "pass123"
 }
 ```
-Execute. Should return a `200` with a token and the user object:
+Execute. Should return `200` with a token and user object:
 ```json
 {
   "token": "eyJhbGciOiJIUzM4NCJ9...",
-  "user": { "id": 7, "username": "testuser", ... }
+  "user": { "id": 7, "username": "testuser", "email": "test@paytracker.com", "currency": "INR", "createdAt": "..." }
 }
 ```
 
-### Step 3: Try the other endpoints
-Use the `id` from Step 1 to test `GET /api/users/{id}`, `PUT /api/users/{id}`, and `DELETE /api/users/{id}` the same way — expand, Try it out, fill in the `id` path parameter, Execute.
+### Step 3: Try the rest
+Use the `id` from Step 1 to test `GET /api/users/{id}`, `GET /api/users`, `PUT /api/users/{id}`, and `DELETE /api/users/{id}` the same way — expand, Try it out, fill in the fields, Execute.
+
+## Notes
+The JWT is signed with a fixed secret key and lasts 24 hours. Right now the token isn't checked on every request across the other services — login and registration genuinely work, but the token isn't yet used as a security gate everywhere.
