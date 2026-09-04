@@ -4,7 +4,6 @@ Handles user registration, login, and issuing JWT tokens.
 
 ## Purpose
 This is the entry point for anyone using PayTracker — you register here, log in here, and every other service uses the `userId` this service hands out to know whose data is whose.
-
 ## Port
 8081
 
@@ -12,6 +11,9 @@ This is the entry point for anyone using PayTracker — you register here, log i
 `user_db`
 
 ## What it does
+- Register with username, email, and password
+- Password is hashed with BCrypt before it's saved
+- Login checks the password and returns a signed JWT token plus the user's profile
 - Register with username, email, and password
 - Password is hashed with BCrypt before it's saved
 - Login checks the password and returns a signed JWT token plus the user's profile
@@ -32,13 +34,21 @@ This is the entry point for anyone using PayTracker — you register here, log i
 ```bash
 ./mvnw spring-boot:run
 ```
+```bash
+./mvnw spring-boot:run
+```
+
+or via Docker:
+```bash
+docker compose up user-service
+```
 
 ## Testing via Swagger
 
 Open http://localhost:8081/swagger-ui.html
 
 ### Step 1: Register a user
-Expand **POST /api/users/register** -> **Try it out** -> paste:
+Expand **POST /api/users/register** → **Try it out** → paste:
 ```json
 {
   "username": "testuser",

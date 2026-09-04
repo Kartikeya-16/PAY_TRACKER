@@ -24,13 +24,16 @@ The idea is to bring together two things that are usually tracked separately —
 - Spring Cloud Gateway for routing requests
 - OpenFeign for services calling each other directly
 - JWT for login tokens
+- Spring Cloud Gateway for routing requests
+- OpenFeign for services calling each other directly
+- JWT for login tokens
+- Docker + Docker Compose (optional — can also run everything manually)
 
 ## How everything talks to each other
 
 Client -> API Gateway (8080) -> User / Ledger / Subscription / Analytics
 Analytics -> Ledger (direct call)
 Analytics -> Subscription (direct call)
-
 
 Analytics Service doesn't store transaction or subscription data itself — it calls Ledger Service and Subscription Service directly (using Feign) whenever it needs that data, instead of keeping its own copy.
 

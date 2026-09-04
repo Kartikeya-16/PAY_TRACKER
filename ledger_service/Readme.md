@@ -67,5 +67,38 @@ Expand **GET /api/transactions/user/{userId}** -> Try it out -> enter `userId = 
 ### Step 4: Update and delete
 Take the `id` from Step 1 -> try **PUT /api/transactions/{id}** (send the same body with a different amount) and **DELETE /api/transactions/{id}**.
 
+## Testing via Swagger
+
+Open http://localhost:8082/swagger-ui.html
+
+You'll need a `userId` first — register one through User Service's Swagger (http://localhost:8081/swagger-ui.html) if you haven't already.
+
+### Step 1: Add a transaction
+Expand **POST /api/transactions** → **Try it out**:
+```json
+{
+  "userId": 7,
+  "type": "EXPENSE",
+  "amount": 500,
+  "category": "Food",
+  "paymentMethod": "UPI",
+  "description": "Lunch",
+  "tags": "college",
+  "transactionDate": "2026-09-04"
+}
+```
+Execute. Should return `201` with the created transaction.
+
+### Step 2: Fetch it back
+Expand **GET /api/transactions/user/{userId}** → Try it out → enter `userId = 7` → Execute. You should see the transaction you just created.
+
+### Step 3: Try filtering
+- **GET /api/transactions/user/{userId}/type/{type}** — try `type = EXPENSE` or `INCOME`
+- **GET /api/transactions/user/{userId}/category/{category}** — try `category = Food`
+- **GET /api/transactions/user/{userId}/range** — enter `start=2026-09-01`, `end=2026-09-30`
+
+### Step 4: Update and delete
+Take the `id` from Step 1 → try **PUT /api/transactions/{id}** (send the same body with a different amount) and **DELETE /api/transactions/{id}**.
+
 ## Notes
 This service is used by Analytics Service to work out spending totals and trends — it doesn't know Analytics exists, Analytics just calls its normal API.
